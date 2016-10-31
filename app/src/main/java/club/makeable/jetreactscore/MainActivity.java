@@ -3,9 +3,12 @@ package club.makeable.jetreactscore;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
@@ -39,7 +42,9 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
     private Button      saveButton;
     private TextView    scoreHintView;
     private ListView    leaderView;
+
     private Handler     mHandler = new Handler(Looper.getMainLooper());
+    private GestureDetectorCompat mDetector;
 
 
     private ArrayList<GameScore> scores = new ArrayList<GameScore>();
@@ -49,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mDetector = new GestureDetectorCompat(this, new MyGestureListener());
 
         scoreView = (TextView) findViewById(R.id.scoreboard);
         Typeface custom_font = Typeface.createFromAsset(getApplicationContext().getAssets(),  "fonts/lcd24display.ttf");
@@ -106,6 +112,12 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         mqttClient = null;
 
         super.onPause();
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event){
+        this.mDetector.onTouchEvent(event);
+        return super.onTouchEvent(event);
     }
 
     private void cleanView() {
@@ -184,6 +196,17 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             }
 
         });
+    }
+
+    class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+        private static final String DEBUG_TAG = "Gestures";
+
+        @Override
+        public boolean onDoubleTap(MotionEvent event) {
+            Log.d(DEBUG_TAG, "onDoubleTap: " + event.toString() );
+            cleanView();
+            return true;
+        }
     }
 
     //

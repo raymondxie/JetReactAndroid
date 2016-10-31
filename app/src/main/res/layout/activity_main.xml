@@ -21,6 +21,7 @@
             android:layout_height="wrap_content"
             android:textSize="30sp"
             android:visibility="invisible"
+            android:inputType="textCapWords"
             android:hint="player name" />
 
         <Button
@@ -41,7 +42,7 @@
             android:layout_height="wrap_content"
             android:textSize="100sp"
             android:textColor="@color/colorPrimaryDark"
-            android:text="138" />
+            android:text="238" />
 
         <TextView
             android:id="@+id/scorehint"
