@@ -77,6 +77,9 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                 // push score to backend
                 Log.d(TAG, "saving game score to backend");
                 saveGameScore(game);
+
+                //reset name
+                playerView.setText("");
             }
         });
         scoreHintView = (TextView) findViewById(R.id.scorehint);
@@ -88,8 +91,9 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         Collections.sort(scores);
         leaderAdapter.notifyDataSetChanged();
 
-        mHandler = new Handler(Looper.getMainLooper());
+        GameSound.prepare(this);
 
+        mHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
@@ -205,6 +209,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         public boolean onDoubleTap(MotionEvent event) {
             Log.d(DEBUG_TAG, "onDoubleTap: " + event.toString() );
             cleanView();
+
             return true;
         }
     }
@@ -232,6 +237,12 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             int score = Integer.parseInt(scoreView.getText().toString());
 
             final int updatedScore = score + point;
+            if(point > 0) {
+                GameSound.playAddPoint();
+            }
+            else if( point < 0 ) {
+                GameSound.playMinusPoint();
+            }
 
             mHandler.post(new Runnable() {
                 @Override
@@ -247,6 +258,8 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             String value = content.substring("game=".length());
             Log.d(TAG, "game: " + value );
             if("started".equalsIgnoreCase(value)) {
+                GameSound.playStartGame();
+
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -258,6 +271,8 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                 });
             }
             else if("ended".equalsIgnoreCase(value)) {
+                GameSound.playEndGame();
+
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
