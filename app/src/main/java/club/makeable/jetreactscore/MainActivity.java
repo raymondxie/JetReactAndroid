@@ -42,6 +42,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
     private TextView    scoreView;
     private TextView    playerView;
     private Button      saveButton;
+    private Button      discardButton;
     private TextView    scoreHintView;
     private ListView    leaderView;
 
@@ -75,6 +76,11 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             public void onClick(View v) {
                 // push score to display
                 String name = playerView.getText().toString();
+
+                if( name == null || name.trim().isEmpty()) {
+                    return;
+                }
+
                 int score = Integer.parseInt(scoreView.getText().toString());
                 GameScore game = new GameScore(name, score);
                 scores.add(game);
@@ -88,6 +94,18 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
 
                 //reset name
                 playerView.setText("");
+            }
+        });
+        discardButton = (Button) findViewById(R.id.btnDiscard);
+        discardButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // discard the score without save
+                String name = playerView.getText().toString();
+                int score = Integer.parseInt(scoreView.getText().toString());
+
+                //reset name
+                resetGame();
             }
         });
         scoreHintView = (TextView) findViewById(R.id.scorehint);
@@ -146,6 +164,23 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         decorView.setSystemUiVisibility(uiOptions);
     }
 
+    private void resetGame() {
+        playerView.setText("");
+        playerView.setVisibility(View.INVISIBLE);
+        saveButton.setVisibility(View.INVISIBLE);
+        discardButton.setVisibility(View.INVISIBLE);
+
+        scoreView.setText(String.valueOf(0));
+
+        scoreHintView.setVisibility(View.VISIBLE);
+        scoreHintView.setText("Game not started");
+
+        // go into self-playing
+        gameState = GAME_SELF_PLAYING;
+
+        cleanView();
+    }
+
     private void saveGameScore(GameScore score) {
         RequestParams params = new RequestParams();
         params.put("name", score.getName());
@@ -156,15 +191,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 Log.d(TAG, "Game score saved. Status=" + statusCode);
 
-                playerView.setVisibility(View.INVISIBLE);
-                saveButton.setVisibility(View.INVISIBLE);
-
-                scoreView.setText(String.valueOf(0));
-                scoreHintView.setVisibility(View.VISIBLE);
-                scoreHintView.setText("Game not started");
-
-                // go into self-playing
-                gameState = GAME_SELF_PLAYING;
+                resetGame();
             }
 
             @Override
@@ -290,6 +317,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                         scoreView.setText(String.valueOf(0));
                         playerView.setVisibility(View.INVISIBLE);
                         saveButton.setVisibility(View.INVISIBLE);
+                        discardButton.setVisibility(View.INVISIBLE);
                         scoreHintView.setVisibility(View.INVISIBLE);
                     }
                 });
@@ -308,6 +336,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                         // show fields for input
                         playerView.setVisibility(View.VISIBLE);
                         saveButton.setVisibility(View.VISIBLE);
+                        discardButton.setVisibility(View.VISIBLE);
                         scoreHintView.setVisibility(View.VISIBLE);
                         scoreHintView.setText("Game Over");
                     }
