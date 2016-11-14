@@ -17,17 +17,19 @@ public class GameSound {
 
     public static void prepare(Context ctx) {
         audioManager = (AudioManager)ctx.getSystemService(Context.AUDIO_SERVICE);
-        soundPool = new SoundPool(2, AudioManager.STREAM_ALARM, 0);
+        soundPool = new SoundPool(5, AudioManager.STREAM_ALARM, 0);
 
         int startId = soundPool.load(ctx, R.raw.start, 1);
         int endId = soundPool.load(ctx, R.raw.end, 1);
         int pointId = soundPool.load(ctx, R.raw.point, 1);
         int minusId = soundPool.load(ctx, R.raw.minus, 1);
+        int bgId = soundPool.load(ctx, R.raw.background, 1);
 
         sounds.put("start", startId);
         sounds.put("end", endId);
         sounds.put("point", pointId);
         sounds.put("minus", minusId);
+        sounds.put("background", bgId);
 
     }
 
@@ -47,6 +49,9 @@ public class GameSound {
         play("minus");
     }
 
+    public static void playBackground() {
+        play("background");
+    }
 
     private static void play(String soundName) {
         float vol = audioManager.getStreamVolume(
@@ -54,8 +59,9 @@ public class GameSound {
         float maxVol = audioManager.getStreamMaxVolume(
                 AudioManager.STREAM_ALARM);
 
-        float leftVolume = 1.0f;
-        float rightVolume = 1.0f;
+        // float leftVolume = val/maxVol;
+        float leftVolume = 0.4f;
+        float rightVolume = 0.4f;
 
 
         int priority = 1;

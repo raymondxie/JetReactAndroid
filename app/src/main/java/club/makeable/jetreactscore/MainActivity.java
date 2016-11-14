@@ -1,6 +1,7 @@
 package club.makeable.jetreactscore;
 
 import android.graphics.Typeface;
+import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.view.GestureDetectorCompat;
@@ -36,16 +37,19 @@ import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends AppCompatActivity implements MqttCallback {
     final static String TAG = MainActivity.class.getSimpleName();
+
     private MQTTClient  mqttClient;
     private TextView    scoreView;
     private TextView    playerView;
     private Button      saveButton;
     private TextView    scoreHintView;
     private ListView    leaderView;
+    private int         gameState = 0;  // 0 - not started, 1 - started
+
 
     private Handler     mHandler = new Handler(Looper.getMainLooper());
     private GestureDetectorCompat mDetector;
-
+    private MediaPlayer mediaPlayer;
 
     private ArrayList<GameScore> scores = new ArrayList<GameScore>();
     ScoreAdapter leaderAdapter = null;
@@ -91,8 +95,6 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         Collections.sort(scores);
         leaderAdapter.notifyDataSetChanged();
 
-        GameSound.prepare(this);
-
         mHandler = new Handler(Looper.getMainLooper());
     }
 
@@ -108,12 +110,19 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
 
         Log.d(TAG, "hide system status");
         cleanView();
+
+        GameSound.prepare(this);
+
+        mediaPlayer = MediaPlayer.create(this, R.raw.background);
+        mediaPlayer.setLooping(true);
     }
 
     @Override
     protected void onPause() {
         mqttClient.disconnect();
         mqttClient = null;
+
+        mediaPlayer.release();
 
         super.onPause();
     }
@@ -228,7 +237,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         String content = message.toString().trim();
         Log.d(TAG, "Received MQTT message: " + topic + " | " + content );
 
-        if( content.startsWith("point")) {
+        if( content.startsWith("point") && gameState == 1) {
             // point=100, or point=-40
             String value = content.substring("point=".length());
             int point = Integer.parseInt(value);
@@ -236,13 +245,19 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             // current score
             int score = Integer.parseInt(scoreView.getText().toString());
 
-            final int updatedScore = score + point;
+            score = score + point;
+            if( score < 0 ) {
+                score = 0;
+            }
+
+            final int updatedScore = score;
             if(point > 0) {
                 GameSound.playAddPoint();
             }
             else if( point < 0 ) {
                 GameSound.playMinusPoint();
             }
+
 
             mHandler.post(new Runnable() {
                 @Override
@@ -260,6 +275,8 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             if("started".equalsIgnoreCase(value)) {
                 GameSound.playStartGame();
 
+                gameState = 1;
+
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -269,9 +286,14 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                         scoreHintView.setVisibility(View.INVISIBLE);
                     }
                 });
+
+                // start background music
+                mediaPlayer.start();
             }
             else if("ended".equalsIgnoreCase(value)) {
                 GameSound.playEndGame();
+
+                gameState = 0;
 
                 mHandler.post(new Runnable() {
                     @Override
@@ -283,6 +305,8 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                         scoreHintView.setText("Game Over");
                     }
                 });
+                // stop background music
+                mediaPlayer.pause();
             }
         }
         else {

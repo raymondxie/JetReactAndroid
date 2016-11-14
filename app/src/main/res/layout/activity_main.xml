@@ -40,7 +40,7 @@
             android:padding="@dimen/activity_vertical_margin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="100sp"
+            android:textSize="120sp"
             android:textColor="@color/colorPrimaryDark"
             android:text="238" />
 
