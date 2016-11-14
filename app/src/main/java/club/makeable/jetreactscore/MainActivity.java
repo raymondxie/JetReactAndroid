@@ -44,7 +44,11 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
     private Button      saveButton;
     private TextView    scoreHintView;
     private ListView    leaderView;
-    private int         gameState = 0;  // 0 - not started, 1 - started
+
+    private final int   GAME_NOT_PLAYING = 0;
+    private final int   GAME_PLAYING = 1;
+    private final int   GAME_SELF_PLAYING = 2;
+    private int         gameState = GAME_NOT_PLAYING;
 
 
     private Handler     mHandler = new Handler(Looper.getMainLooper());
@@ -158,6 +162,9 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                 scoreView.setText(String.valueOf(0));
                 scoreHintView.setVisibility(View.VISIBLE);
                 scoreHintView.setText("Game not started");
+
+                // go into self-playing
+                gameState = GAME_SELF_PLAYING;
             }
 
             @Override
@@ -237,7 +244,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         String content = message.toString().trim();
         Log.d(TAG, "Received MQTT message: " + topic + " | " + content );
 
-        if( content.startsWith("point") && gameState == 1) {
+        if( content.startsWith("point") && gameState != GAME_NOT_PLAYING) {
             // point=100, or point=-40
             String value = content.substring("point=".length());
             int point = Integer.parseInt(value);
@@ -275,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             if("started".equalsIgnoreCase(value)) {
                 GameSound.playStartGame();
 
-                gameState = 1;
+                gameState = GAME_PLAYING;
 
                 mHandler.post(new Runnable() {
                     @Override
@@ -293,7 +300,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             else if("ended".equalsIgnoreCase(value)) {
                 GameSound.playEndGame();
 
-                gameState = 0;
+                gameState = GAME_NOT_PLAYING;
 
                 mHandler.post(new Runnable() {
                     @Override
