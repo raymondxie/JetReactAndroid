@@ -5,12 +5,23 @@ package club.makeable.jetreactscore;
  */
 
 public class GameScore implements Comparable<GameScore> {
+
+    int record;
     String name;
     int score;
 
-    public GameScore(String name, int score) {
+    public GameScore(int recId, String name, int score) {
+        this.record = recId;
         this.name = name;
         this.score = score;
+    }
+
+    public int getRecord() {
+        return record;
+    }
+
+    public void setRecord(int record) {
+        this.record = record;
     }
 
     public String getName() {

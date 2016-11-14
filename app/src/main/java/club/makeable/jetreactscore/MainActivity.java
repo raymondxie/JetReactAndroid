@@ -1,5 +1,8 @@
 package club.makeable.jetreactscore;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Typeface;
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -11,6 +14,7 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -38,6 +42,7 @@ import cz.msebera.android.httpclient.Header;
 public class MainActivity extends AppCompatActivity implements MqttCallback {
     final static String TAG = MainActivity.class.getSimpleName();
 
+    final Context context = this;
     private MQTTClient  mqttClient;
     private TextView    scoreView;
     private TextView    playerView;
@@ -82,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                 }
 
                 int score = Integer.parseInt(scoreView.getText().toString());
-                GameScore game = new GameScore(name, score);
+                GameScore game = new GameScore(-1, name, score);
                 scores.add(game);
 
                 Collections.sort(scores);
@@ -113,6 +118,45 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         leaderView = (ListView) findViewById(R.id.leaderboard);
         leaderAdapter = new ScoreAdapter(this, R.layout.score_row, scores);
         leaderView.setAdapter(leaderAdapter);
+        leaderView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                final int entry = position;
+
+                GameScore score = scores.get(entry);
+
+                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                        context);
+
+                // set title
+                alertDialogBuilder.setTitle("Delete game score");
+                String message = "Are you sure to delete the score of " + score.getScore() + " for " + score.getName() + "?";
+                // set dialog message
+                alertDialogBuilder
+                        .setMessage(message)
+                        .setCancelable(true)
+                        .setPositiveButton("Yes",new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                deleteScore(entry);
+                            }
+                        })
+                        .setNegativeButton("No",new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                // if this button is clicked, just close
+                                // the dialog box and do nothing
+                                dialog.cancel();
+                            }
+                        });
+
+                // create alert dialog
+                AlertDialog alertDialog = alertDialogBuilder.create();
+
+                // show it
+                alertDialog.show();
+
+                return true;
+            }
+        });
 
         Collections.sort(scores);
         leaderAdapter.notifyDataSetChanged();
@@ -181,6 +225,27 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         cleanView();
     }
 
+    private void deleteScore(int position) {
+        GameScore score = scores.get(position);
+
+        ApexClient.delete("/pls/apex/makeable/jetreact/score/"+score.getRecord(), null, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                Log.d(TAG, "Game score deleted. Status=" + statusCode);
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                Log.d(TAG, "Failed to delete game score: " + statusCode);
+            }
+        });
+
+        scores.remove(score);
+
+        Collections.sort(scores);
+        leaderAdapter.notifyDataSetChanged();
+
+    }
     private void saveGameScore(GameScore score) {
         RequestParams params = new RequestParams();
         params.put("name", score.getName());
@@ -214,11 +279,13 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                         // We got score list, clear any existing
                         scores.clear();
 
+                        int recId = 0;
                         String name ="";
                         int score = 0;
                         for(int i=0; i< items.length(); i++) {
                             JSONObject item = items.getJSONObject(i);
                             try {
+                                recId = item.getInt("id");
                                 name = item.getString("name");
                                 score = item.getInt("score");
                             }
@@ -227,7 +294,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                             }
 
                             if( name != null && !"".equalsIgnoreCase(name)) {
-                                GameScore gameScore = new GameScore(name, score);
+                                GameScore gameScore = new GameScore(recId, name, score);
                                 scores.add(gameScore);
                             }
                         }

@@ -53,6 +53,7 @@ public class ScoreAdapter extends ArrayAdapter<GameScore> {
         holder.ranking.setText(String.valueOf(1+position));
         holder.name.setText(entry.getName());
         holder.point.setText(entry.getScore()+"");
+        holder.recId = entry.getRecord();
 
         return row;
     }
@@ -61,5 +62,6 @@ public class ScoreAdapter extends ArrayAdapter<GameScore> {
         TextView ranking;
         TextView name;
         TextView point;
+        int recId;
     }
 }
